@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2017", // or higher
+    "module": "esnext", // or 'es2022' or 'node16' depending on your environment
+    "moduleResolution": "node", // Ensure node modules work properly
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+  },
+  "exclude": ["node_modules"]
+}

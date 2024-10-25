@@ -7,8 +7,8 @@ import cookieParser from "cookie-parser";
 import { CORS_ORIGIN } from "./constants";
 import logger from "./utils/logger";
 import healthCheckRouter from "./routes/healthCheck.route";
-import userRouter from "./routes/user.route";
 import errorHandler from "./middlewares/error.middleware";
+import conversationsRouter from "./routes/chat.route";
 
 // CONFIGS
 dotenv.config();
@@ -51,7 +51,7 @@ app.use(express.static("public"));
 
 // ROUTES
 app.use("/api/v1/health", healthCheckRouter);
-app.use("/api/v1/users", userRouter);
+app.use("/api/v1/conversations", conversationsRouter);
 
 // Error Handler
 app.use(errorHandler);

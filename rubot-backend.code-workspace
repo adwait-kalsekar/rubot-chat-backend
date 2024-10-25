@@ -1,11 +1,14 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../rubot-auth-backend"
-		}
-	],
-	"settings": {}
+  "folders": [
+    {
+      "path": ".",
+    },
+    {
+      "path": "../rubot-auth-backend",
+    },
+    {
+      "path": "../rubot-genai-backend",
+    },
+  ],
+  "settings": {},
 }

@@ -4,17 +4,19 @@ import logger from "./utils/logger";
 
 import app from "./app";
 import { PORT } from "./constants";
-import connectDB from "./db";
+import connectDB from "./db/prisma";
 
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      const localUrl = `http://localhost:${PORT}`;
-      const styledUrl = chalk.magenta.underline.bold(localUrl); // Style the URL with Chalk
+// connectDB()
+//   .then(() => {
 
-      logger.info(`Server is running at: ${styledUrl}`);
-    });
-  })
-  .catch((err) => {
-    logger.error("MongoDB Connection Error: ", err);
-  });
+//   })
+//   .catch((err) => {
+//     logger.error("MongoDB Connection Error: ", err);
+//   });
+
+app.listen(PORT, () => {
+  const localUrl = `http://localhost:${PORT}`;
+  const styledUrl = chalk.magenta.underline.bold(localUrl); // Style the URL with Chalk
+
+  logger.info(`Server is running at: ${styledUrl}`);
+});

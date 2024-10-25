@@ -14,8 +14,9 @@ datasource db {
 }
 
 model Conversation {
-  id        Int       @id @default(autoincrement())
+  id        String       @id @default(nanoid())
   userId    String
+  title     String
   messages  Message[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -24,8 +25,8 @@ model Conversation {
 }
 
 model Message {
-  id             Int          @id @default(autoincrement())
-  conversationId Int
+  id             String          @id @default(nanoid())
+  conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   role           Role
   content        String
@@ -35,6 +36,6 @@ model Message {
 }
 
 enum Role {
-  USER      @map("user")
-  ASSISTANT @map("assistant")
+  user
+  assistant
 }

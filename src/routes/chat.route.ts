@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   addMessageToConversation,
   createConversation,
+  getAiResponse,
   getAllConversations,
   getAllMessages,
 } from "../controllers/chat.controller";
@@ -18,5 +19,7 @@ router
   .route("/:conversationId")
   .get(verifyJwt, getAllMessages)
   .post(verifyJwt, addMessageToConversation);
+
+router.route("/:conversationId/get-response").post(verifyJwt, getAiResponse);
 
 export default router;

@@ -5,8 +5,17 @@ import asyncHandler from "../utils/asyncHandler";
 import ApiError from "../utils/ApiError";
 import ApiResponse from "../utils/ApiResponse";
 import { User } from "../middlewares/auth.middleware";
-import { createMessageValidator } from "../validators/message.validator";
+import { messageValidator } from "../validators/message.validator";
 import { Role } from "@prisma/client";
+import axios from "axios";
+import { GENAI_BACKEND_URL } from "../constants";
+
+interface AiResponseData {
+  statusCode: Number;
+  data: String;
+  message: String;
+  success: Boolean;
+}
 
 const getAllConversations = asyncHandler(
   async (req: Request, res: Response) => {
@@ -22,6 +31,9 @@ const getAllConversations = asyncHandler(
       },
       include: {
         messages: false,
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
@@ -46,6 +58,9 @@ const getAllMessages = asyncHandler(async (req: Request, res: Response) => {
           role: true,
           content: true,
         },
+        orderBy: {
+          createdAt: "asc",
+        },
       },
     },
   });
@@ -59,14 +74,23 @@ const getAllMessages = asyncHandler(async (req: Request, res: Response) => {
 
 const createConversation = asyncHandler(async (req: Request, res: Response) => {
   const user: User = req.user;
-  const validatedMessage = createMessageValidator.parse(req.body);
+  const validatedMessage = messageValidator.parse(req.body);
 
   const { prompt } = validatedMessage;
+
+  const titleResponse = await axios.post(
+    `${GENAI_BACKEND_URL}/ai/generate-title`,
+    { prompt },
+  );
+
+  console.log(titleResponse);
+
+  const title = titleResponse.data.data;
 
   const conversation = await prisma.conversation.create({
     data: {
       userId: user._id,
-      title: prompt.slice(0, 10),
+      title,
     },
   });
 
@@ -93,7 +117,7 @@ const addMessageToConversation = asyncHandler(
     const user: User = req.user;
     const { conversationId } = req.params;
 
-    const validatedMessage = createMessageValidator.parse(req.body);
+    const validatedMessage = messageValidator.parse(req.body);
     const { prompt } = validatedMessage;
 
     const conversation = await prisma.conversation.findUnique({
@@ -121,9 +145,47 @@ const addMessageToConversation = asyncHandler(
   },
 );
 
+const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
+  const user: User = req.user;
+  const { conversationId } = req.params;
+
+  const validatedMessage = messageValidator.parse(req.body);
+  const { prompt } = validatedMessage;
+
+  const aiResponse = await axios.post(`${GENAI_BACKEND_URL}/ai/get-response`, {
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  });
+
+  const aiData: AiResponseData = aiResponse.data;
+
+  const response = await prisma.message.create({
+    data: {
+      conversationId,
+      content: aiData.data.toString(),
+      role: Role.assistant,
+    },
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        aiData.data.toString(),
+        `Response for the message: ${prompt}`,
+      ),
+    );
+});
+
 export {
   getAllConversations,
   getAllMessages,
   createConversation,
   addMessageToConversation,
+  getAiResponse,
 };

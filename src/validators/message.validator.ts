@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-const createMessageValidator = z.object({
+const messageValidator = z.object({
   prompt: z.string(),
 });
 
-export { createMessageValidator };
+export { messageValidator };

@@ -149,6 +149,29 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
   const user: User = req.user;
   const { conversationId } = req.params;
 
+  const userId = user._id.toString();
+
+  if (userId !== "67155a56ce3ce15555514dce") {
+    const response = await prisma.message.create({
+      data: {
+        conversationId,
+        content:
+          "Sorry the chat feature is still under development and only accessible to beta users",
+        role: "assistant",
+      },
+    });
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          "Sorry the chat feature is still under development and only accessible to beta users",
+          `Not allowed to send messages yet`,
+        ),
+      );
+  }
+
   const validatedMessage = messageValidator.parse(req.body);
   const { prompt } = validatedMessage;
 

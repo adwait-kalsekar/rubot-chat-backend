@@ -8,7 +8,7 @@ import { User } from "../middlewares/auth.middleware";
 import { messageValidator } from "../validators/message.validator";
 import { Role } from "@prisma/client";
 import axios from "axios";
-import { GENAI_BACKEND_URL } from "../constants";
+import { AUTH_BACKEND_URL, GENAI_BACKEND_URL } from "../constants";
 
 interface AiResponseData {
   statusCode: Number;
@@ -149,9 +149,9 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
   const user: User = req.user;
   const { conversationId } = req.params;
 
-  const userId = user._id.toString();
+  const userRole = user.role;
 
-  if (userId !== "67155a56ce3ce15555514dce") {
+  if (userRole === "user") {
     const response = await prisma.message.create({
       data: {
         conversationId,
@@ -172,8 +172,49 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
       );
   }
 
+  const userProfileResponse = await axios.get(`${AUTH_BACKEND_URL}/profile`, {
+    headers: {
+      Authorization: `Bearer ${
+        req.cookies.accessToken ||
+        req.header("Authorization")?.replace("Bearer ", "")
+      }`,
+    },
+  });
+
+  const userProfileData = userProfileResponse.data?.data;
+
+  const userData = userProfileData.user;
+
+  const userForProfile = {
+    fullName: userData.fullName,
+    username: userData.username,
+    email: userData.email,
+    role: userData.role,
+  };
+
+  const userProfile = {
+    canvasApiKey: userProfileData.canvasApiKey,
+    user: userForProfile,
+    isStudent: userProfileData.isStudent,
+  };
+
   const validatedMessage = messageValidator.parse(req.body);
   const { prompt } = validatedMessage;
+
+  // userProfile.canvasApiKey = "";
+
+  console.log({
+    // chat_history: {
+    //   messages: [
+    //     {
+    //       role: "user",
+    //       content: prompt,
+    //     },
+    //   ],
+    // },
+    // user_profile: userProfile,
+    ...userProfile,
+  });
 
   const aiResponse = await axios.post(`${GENAI_BACKEND_URL}/ai/get-response`, {
     messages: [
@@ -182,6 +223,7 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
         content: prompt,
       },
     ],
+    user_profile: userProfile,
   });
 
   const aiData: AiResponseData = aiResponse.data;

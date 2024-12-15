@@ -33,7 +33,7 @@ const getAllConversations = asyncHandler(
         messages: false,
       },
       orderBy: {
-        createdAt: "desc",
+        updatedAt: "desc",
       },
     });
 
@@ -149,6 +149,30 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
   const user: User = req.user;
   const { conversationId } = req.params;
 
+  const conversation = await prisma.conversation.findUnique({
+    where: {
+      id: conversationId,
+      userId: user._id,
+    },
+    include: {
+      messages: {
+        select: {
+          role: true,
+          content: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
+    },
+  });
+
+  if (!conversation) {
+    throw new ApiError(404, "Conversation Not Found");
+  }
+
+  const messages = conversation.messages;
+
   const userRole = user.role;
 
   if (userRole === "user") {
@@ -201,28 +225,8 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
   const validatedMessage = messageValidator.parse(req.body);
   const { prompt } = validatedMessage;
 
-  // userProfile.canvasApiKey = "";
-
-  console.log({
-    // chat_history: {
-    //   messages: [
-    //     {
-    //       role: "user",
-    //       content: prompt,
-    //     },
-    //   ],
-    // },
-    // user_profile: userProfile,
-    ...userProfile,
-  });
-
   const aiResponse = await axios.post(`${GENAI_BACKEND_URL}/ai/get-response`, {
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
+    messages,
     user_profile: userProfile,
   });
 

@@ -4,13 +4,7 @@ import axios from "axios";
 import asyncHandler from "../utils/asyncHandler";
 import ApiError from "../utils/ApiError";
 import { AUTH_BACKEND_URL } from "../constants";
-
-export interface User {
-  _id: string;
-  email: string;
-  username: string;
-  role: "user" | "admin" | "super_admin";
-}
+import { User } from "../types/user.type";
 
 const verifyJwt = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {

@@ -4,7 +4,7 @@ import prisma from "../db/prisma";
 import asyncHandler from "../utils/asyncHandler";
 import ApiError from "../utils/ApiError";
 import ApiResponse from "../utils/ApiResponse";
-import { User } from "../middlewares/auth.middleware";
+import { User, UserProfile } from "../types/user.type";
 import { messageValidator } from "../validators/message.validator";
 import { Role } from "@prisma/client";
 import axios from "axios";
@@ -175,26 +175,29 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
 
   const userRole = user.role;
 
-  if (userRole === "user") {
-    const response = await prisma.message.create({
-      data: {
-        conversationId,
-        content:
-          "Sorry the chat feature is still under development and only accessible to beta users",
-        role: "assistant",
-      },
-    });
+  const validatedMessage = messageValidator.parse(req.body);
+  const { prompt } = validatedMessage;
 
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          "Sorry the chat feature is still under development and only accessible to beta users",
-          `Not allowed to send messages yet`,
-        ),
-      );
-  }
+  // if (userRole === "user") {
+  //   const response = await prisma.message.create({
+  //     data: {
+  //       conversationId,
+  //       content:
+  //         "Sorry the chat feature is still under development and only accessible to beta users",
+  //       role: "assistant",
+  //     },
+  //   });
+
+  //   return res
+  //     .status(200)
+  //     .json(
+  //       new ApiResponse(
+  //         200,
+  //         "Sorry the chat feature is still under development and only accessible to beta users",
+  //         `Not allowed to send messages yet`,
+  //       ),
+  //     );
+  // }
 
   const userProfileResponse = await axios.get(`${AUTH_BACKEND_URL}/profile`, {
     headers: {
@@ -205,25 +208,41 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
-  const userProfileData = userProfileResponse.data?.data;
+  const userProfileData: UserProfile = userProfileResponse.data?.data;
 
-  const userData = userProfileData.user;
+  if (userProfileData.profile.credits <= 0 && user.role === "user") {
+    const creditsText =
+      "Sorry you don't have enough Credits. Please buy more credits to keep use RUbot";
+    const response = await prisma.message.create({
+      data: {
+        conversationId,
+        content: creditsText,
+        role: Role.assistant,
+      },
+    });
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          creditsText,
+          `Response for the message: ${prompt}`,
+        ),
+      );
+  }
 
   const userForProfile = {
-    fullName: userData.fullName,
-    username: userData.username,
-    email: userData.email,
-    role: userData.role,
+    fullName: userProfileData.fullName,
+    username: userProfileData.username,
+    email: userProfileData.email,
+    role: userProfileData.role,
   };
 
   const userProfile = {
-    canvasApiKey: userProfileData.canvasApiKey,
+    canvasApiKey: userProfileData.profile.canvasApiKey,
     user: userForProfile,
-    isStudent: userProfileData.isStudent,
+    isStudent: userProfileData.profile.isStudent,
   };
-
-  const validatedMessage = messageValidator.parse(req.body);
-  const { prompt } = validatedMessage;
 
   const aiResponse = await axios.post(`${GENAI_BACKEND_URL}/ai/get-response`, {
     messages,
@@ -239,6 +258,25 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
       role: Role.assistant,
     },
   });
+
+  if (user.role === "user") {
+    const useCreditResponse = await axios.post(
+      `${AUTH_BACKEND_URL}/profile/use-credit`,
+      null,
+      {
+        headers: {
+          Authorization: `Bearer ${
+            req.cookies.accessToken ||
+            req.header("Authorization")?.replace("Bearer ", "")
+          }`,
+        },
+      },
+    );
+
+    if (useCreditResponse.status === 400) {
+      throw new ApiError(400, "Cannot Deduct credits. Zero Credits");
+    }
+  }
 
   return res
     .status(200)

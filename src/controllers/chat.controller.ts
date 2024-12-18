@@ -6,7 +6,6 @@ import ApiError from "../utils/ApiError";
 import ApiResponse from "../utils/ApiResponse";
 import { User, UserProfile } from "../types/user.type";
 import { messageValidator } from "../validators/message.validator";
-import { Role } from "@prisma/client";
 import axios from "axios";
 import { AUTH_BACKEND_URL, GENAI_BACKEND_URL } from "../constants";
 
@@ -135,7 +134,7 @@ const addMessageToConversation = asyncHandler(
       data: {
         conversationId,
         content: prompt,
-        role: Role.user,
+        role: "user",
       },
     });
 
@@ -217,7 +216,7 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
       data: {
         conversationId,
         content: creditsText,
-        role: Role.assistant,
+        role: "assistant",
       },
     });
     return res
@@ -255,7 +254,7 @@ const getAiResponse = asyncHandler(async (req: Request, res: Response) => {
     data: {
       conversationId,
       content: aiData.data.toString(),
-      role: Role.assistant,
+      role: "assistant",
     },
   });
 
